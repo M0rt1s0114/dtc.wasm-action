@@ -21,27 +21,20 @@ jobs:
           version: 'latest'
           actions-cache-folder: 'emsdk-cache'
 
-      - name: Build only dtc
+      - name: Build only dtc with exported functions
         run: |
           make clean
           make CC=emcc NO_YAML=1 \
-               CFLAGS="-DNO_YAML -s TOTAL_MEMORY=268435456 -s STACK_SIZE=2097152" \
+               CFLAGS="-DNO_YAML" \
+               LDFLAGS="-s TOTAL_MEMORY=268435456 -s STACK_SIZE=2097152 -s EXPORTED_FUNCTIONS='[\"_malloc\",\"_free\",\"_main\"]'" \
                dtc -j$(nproc)
 
       - name: Post-process outputs
         run: |
-          echo "Files after build:"
-          ls -la
-          # 重命名 dtc 为 dtc.js（如果存在）
           if [ -f dtc ]; then
             mv dtc dtc.js
           fi
-          # 确保 dtc.wasm 存在
-          if [ ! -f dtc.wasm ]; then
-            echo "❌ dtc.wasm not found!"
-            exit 1
-          fi
-          echo "✅ Ready: dtc.js and dtc.wasm"
+          ls -lh dtc.js dtc.wasm
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
