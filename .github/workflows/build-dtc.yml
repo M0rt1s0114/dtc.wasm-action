@@ -1,0 +1,38 @@
+name: Build dtc WebAssembly (from upstream)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:          # 允许手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout official dtc repository
+        uses: actions/checkout@v4
+        with:
+          repository: dgibson/dtc   # 直接使用官方仓库
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 'latest'
+          actions-cache-folder: 'emsdk-cache'
+
+      - name: Build with emcc (256MB memory, 2MB stack)
+        run: |
+          make clean
+          make CC=emcc NO_YAML=1 \
+               CFLAGS="-s TOTAL_MEMORY=268435456 -s STACK_SIZE=2097152" \
+               -j$(nproc)
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dtc-wasm
+          path: |
+            dtc.js
+            dtc.wasm
+          if-no-files-found: error
