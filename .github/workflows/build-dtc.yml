@@ -3,7 +3,7 @@ name: Build dtc WebAssembly (from upstream)
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch:          # 允许手动触发
+  workflow_dispatch:
 
 jobs:
   build:
@@ -13,7 +13,7 @@ jobs:
       - name: Checkout official dtc repository
         uses: actions/checkout@v4
         with:
-          repository: dgibson/dtc   # 直接使用官方仓库
+          repository: dgibson/dtc
 
       - name: Setup Emscripten
         uses: mymindstorm/setup-emsdk@v14
@@ -21,12 +21,16 @@ jobs:
           version: 'latest'
           actions-cache-folder: 'emsdk-cache'
 
-      - name: Build with emcc (256MB memory, 2MB stack)
+      - name: Build with emcc
         run: |
           make clean
+          # 关键：在 CFLAGS 中添加 -DNO_YAML 以定义宏，同时保留内存参数
           make CC=emcc NO_YAML=1 \
-               CFLAGS="-s TOTAL_MEMORY=268435456 -s STACK_SIZE=2097152" \
+               CFLAGS="-DNO_YAML -s TOTAL_MEMORY=268435456 -s STACK_SIZE=2097152" \
                -j$(nproc)
+
+      - name: List generated files
+        run: ls -lh dtc.js dtc.wasm 2>/dev/null || echo "Files not found"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
