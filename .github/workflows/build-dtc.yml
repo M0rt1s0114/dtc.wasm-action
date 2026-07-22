@@ -21,16 +21,19 @@ jobs:
           version: 'latest'
           actions-cache-folder: 'emsdk-cache'
 
-      - name: Build with emcc
+      - name: Build only dtc
         run: |
           make clean
-          # 关键：在 CFLAGS 中添加 -DNO_YAML 以定义宏，同时保留内存参数
+          # 只编译 dtc 目标，不编译其他辅助工具
           make CC=emcc NO_YAML=1 \
                CFLAGS="-DNO_YAML -s TOTAL_MEMORY=268435456 -s STACK_SIZE=2097152" \
-               -j$(nproc)
+               dtc -j$(nproc)
 
       - name: List generated files
-        run: ls -lh dtc.js dtc.wasm 2>/dev/null || echo "Files not found"
+        run: |
+          ls -lh dtc.js dtc.wasm 2>/dev/null || echo "Files not found"
+          # 如果存在其他名字，尝试查找
+          find . -name "*.js" -o -name "*.wasm" | head -10
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
